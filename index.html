@@ -7,36 +7,23 @@
     body {
       margin: 0;
       overflow: hidden;
-      background: linear-gradient(to top, #7bdc84, #b6f2b6); /* cartoon green tones */
-      font-family: sans-serif;
-    }
-
-    /* Watermark text */
-    body::before {
-      content: "Symbiotic";
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 120px;
-      font-weight: 900;
-      color: rgba(0, 50, 0, 0.08);
-      pointer-events: none;
-      user-select: none;
-      z-index: 0;
     }
 
     canvas {
       display: block;
       margin: 0 auto;
-      background: transparent;
       position: relative;
       z-index: 1;
+      background: url("p.png") center/cover no-repeat; /* cartoon nature background */
     }
   </style>
 </head>
 <body>
   <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+  <!-- Sounds -->
+  <audio id="jumpSound" src="sounds/jump.mp3" preload="auto"></audio>
+  <audio id="hitSound" src="sounds/hit.mp3" preload="auto"></audio>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
@@ -53,7 +40,10 @@
     let gameOver = false;
 
     const birdImg = new Image();
-    birdImg.src = "g.png"; // your custom character
+    birdImg.src = "g.png"; // your custom bird character
+
+    const jumpSound = document.getElementById("jumpSound");
+    const hitSound = document.getElementById("hitSound");
 
     function resetGame() {
       bird.y = 200;
@@ -69,7 +59,7 @@
     }
 
     function drawPipes() {
-      ctx.fillStyle = "#228B22"; // forest green pipes
+      ctx.fillStyle = "#228B22"; // green pipes
       pipes.forEach(pipe => {
         ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.top);
         ctx.fillRect(pipe.x, pipe.bottom, PIPE_WIDTH, canvas.height - pipe.bottom);
@@ -102,6 +92,7 @@
           bird.x + bird.w > pipe.x &&
           (bird.y < pipe.top || bird.y + bird.h > pipe.bottom)
         ) {
+          if (!gameOver) hitSound.play();
           gameOver = true;
         }
 
@@ -116,6 +107,7 @@
 
       // ground or ceiling
       if (bird.y + bird.h > canvas.height || bird.y < 0) {
+        if (!gameOver) hitSound.play();
         gameOver = true;
       }
     }
@@ -150,6 +142,8 @@
         resetGame();
       } else {
         bird.dy = JUMP;
+        jumpSound.currentTime = 0;
+        jumpSound.play();
       }
     });
 
@@ -159,4 +153,3 @@
   </script>
 </body>
 </html>
-
