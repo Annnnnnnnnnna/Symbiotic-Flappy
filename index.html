@@ -30,8 +30,8 @@
     const PIPE_WIDTH = 70;   // wider pipes
     const PIPE_GAP = 160;
 
-    // bigger character
-    let bird = { x: 80, y: 200, w: 60, h: 60, dy: 0 };
+    // bigger character (80x80)
+    let bird = { x: 80, y: 200, w: 80, h: 80, dy: 0 };
     let pipes = [];
     let score = 0;
     let gameOver = false;
@@ -52,11 +52,11 @@
       ctx.drawImage(birdImg, bird.x, bird.y, bird.w, bird.h);
     }
 
-    // draw pipe as cylinder with rounded bottom
+    // draw pipe as soft pastel cylinder
     function drawPipe(x, y, w, h) {
-      ctx.fillStyle = "#b6fcb6";       // light green
-      ctx.strokeStyle = "#6ca96c";     // darker outline
-      ctx.lineWidth = 3;
+      ctx.fillStyle = "#d5fdd5";       // soft pastel mint green
+      ctx.strokeStyle = "#90c990";     // gentle darker outline
+      ctx.lineWidth = 2;
 
       ctx.beginPath();
       ctx.moveTo(x, y);
