@@ -8,7 +8,6 @@
       margin: 0;
       overflow: hidden;
     }
-
     canvas {
       display: block;
       margin: 0 auto;
@@ -27,17 +26,19 @@
 
     const GRAVITY = 0.5;
     const JUMP = -8;
-    const PIPE_WIDTH = 70;   // wider pipes
-    const PIPE_GAP = 220;    // much larger gap between top and bottom pipes
+    const PIPE_WIDTH = 70;
+    const PIPE_GAP = 220;      // wider visual gap
+    const GAP_MARGIN = 14;     // extra tolerance for rounded pipe caps (collision)
+    const HIT_PAD = 12;        // shrink the bird hitbox on all sides
 
-    // bigger character (100x100)
+    // Bigger character (100x100)
     let bird = { x: 80, y: 200, w: 100, h: 100, dy: 0 };
     let pipes = [];
     let score = 0;
     let gameOver = false;
 
     const birdImg = new Image();
-    birdImg.src = "g.png"; // your custom character
+    birdImg.src = "g.png";
 
     function resetGame() {
       bird.y = 200;
@@ -50,18 +51,23 @@
 
     function drawBird() {
       ctx.drawImage(birdImg, bird.x, bird.y, bird.w, bird.h);
+
+      // DEBUG: show the shrunken hitbox (uncomment to see)
+      // ctx.strokeStyle = "rgba(255,0,0,.5)";
+      // const hb = hitbox(bird);
+      // ctx.strokeRect(hb.x, hb.y, hb.w, hb.h);
     }
 
-    // draw pipe as soft pastel cylinder
+    // soft pastel cylinder pipes
     function drawPipe(x, y, w, h) {
-      ctx.fillStyle = "#d5fdd5";       // soft pastel mint green
-      ctx.strokeStyle = "#90c990";     // gentle darker outline
+      ctx.fillStyle = "#d5fdd5";   // soft mint
+      ctx.strokeStyle = "#90c990"; // gentle outline
       ctx.lineWidth = 2;
 
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x, y + h - 20);
-      ctx.quadraticCurveTo(x + w/2, y + h, x + w, y + h - 20); // rounded edge
+      ctx.quadraticCurveTo(x + w/2, y + h, x + w, y + h - 20);
       ctx.lineTo(x + w, y);
       ctx.closePath();
       ctx.fill();
@@ -70,10 +76,9 @@
 
     function drawPipes() {
       pipes.forEach(pipe => {
-        // top pipe
+        // top
         drawPipe(pipe.x, 0, PIPE_WIDTH, pipe.top);
-
-        // bottom pipe
+        // bottom
         const h = canvas.height - pipe.bottom;
         drawPipe(pipe.x, pipe.bottom, PIPE_WIDTH, h);
       });
@@ -85,40 +90,47 @@
       ctx.fillText("Score: " + score, 20, 40);
     }
 
+    function spawnPipe() {
+      // keep gap inside screen bounds
+      const top = Math.random() * (canvas.height - PIPE_GAP - 100) + 50;
+      pipes.push({ x: canvas.width, top, bottom: top + PIPE_GAP, passed: false });
+    }
+
     function update() {
       bird.dy += GRAVITY;
       bird.y += bird.dy;
 
-      // add new pipes
       if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 220) {
-        const top = Math.random() * (canvas.height - PIPE_GAP - 100) + 50;
-        pipes.push({ x: canvas.width, top: top, bottom: top + PIPE_GAP, passed: false });
+        spawnPipe();
       }
 
-      // move pipes
-      pipes.forEach(pipe => { pipe.x -= 2; });
+      pipes.forEach(p => { p.x -= 2; });
 
-      // check collisions
-      pipes.forEach(pipe => {
-        if (
-          bird.x < pipe.x + PIPE_WIDTH &&
-          bird.x + bird.w > pipe.x &&
-          (bird.y < pipe.top || bird.y + bird.h > pipe.bottom)
-        ) {
+      // Collision check using shrunken bird hitbox and tolerant gap
+      const hb = hitbox(bird);
+      for (const p of pipes) {
+        const overlapX = hb.x < p.x + PIPE_WIDTH && hb.x + hb.w > p.x;
+        const hitTop = hb.y < (p.top - GAP_MARGIN);
+        const hitBottom = hb.y + hb.h > (p.bottom + GAP_MARGIN);
+        if (overlapX && (hitTop || hitBottom)) {
           gameOver = true;
+          break;
         }
+      }
 
-        if (!pipe.passed && pipe.x + PIPE_WIDTH < bird.x) {
+      // Scoring (when pipe passes the bird)
+      for (const p of pipes) {
+        if (!p.passed && p.x + PIPE_WIDTH < hb.x) {
+          p.passed = true;
           score++;
-          pipe.passed = true;
         }
-      });
+      }
 
-      // remove old pipes
-      pipes = pipes.filter(pipe => pipe.x + PIPE_WIDTH > 0);
+      // Remove off-screen pipes
+      pipes = pipes.filter(p => p.x + PIPE_WIDTH > 0);
 
-      // ground or ceiling
-      if (bird.y + bird.h > canvas.height || bird.y < 0) {
+      // Ground/Ceiling
+      if (hb.y + hb.h > canvas.height || hb.y < 0) {
         gameOver = true;
       }
     }
@@ -143,22 +155,25 @@
     function loop() {
       update();
       draw();
-      if (!gameOver) {
-        requestAnimationFrame(loop);
-      }
+      if (!gameOver) requestAnimationFrame(loop);
     }
 
     canvas.addEventListener("click", () => {
-      if (gameOver) {
-        resetGame();
-      } else {
-        bird.dy = JUMP;
-      }
+      if (gameOver) resetGame();
+      else bird.dy = JUMP;
     });
 
-    birdImg.onload = () => {
-      loop();
-    };
+    birdImg.onload = () => loop();
+
+    // ---- helpers ----
+    function hitbox(b) {
+      return {
+        x: b.x + HIT_PAD,
+        y: b.y + HIT_PAD,
+        w: b.w - HIT_PAD * 2,
+        h: b.h - HIT_PAD * 2
+      };
+    }
   </script>
 </body>
 </html>
