@@ -123,4 +123,68 @@
       pipes.forEach(p => { p.x -= 2; });
 
       const hb = hitbox(bird);
-      for (const
+      for (const p of pipes) {
+        const overlapX = hb.x < p.x + PIPE_WIDTH && hb.x + hb.w > p.x;
+        const hitTop = hb.y < p.top;
+        const hitBottom = hb.y + hb.h > p.bottom;
+        if (overlapX && (hitTop || hitBottom)) {
+          gameOver = true;
+          break;
+        }
+      }
+
+      for (const p of pipes) {
+        if (!p.passed && p.x + PIPE_WIDTH < hb.x) {
+          p.passed = true;
+          score++;
+        }
+      }
+
+      pipes = pipes.filter(p => p.x + PIPE_WIDTH > 0);
+
+      if (hb.y + hb.h > canvas.height || hb.y < 0) {
+        gameOver = true;
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBird();
+      drawPipes();
+      drawScore();
+
+      if (gameOver) {
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#fff";
+        ctx.font = "40px Arial Black";
+        ctx.fillText("Game Over", canvas.width / 2 - 120, canvas.height / 2);
+        ctx.font = "24px Arial";
+        ctx.fillText("Click to restart", canvas.width / 2 - 90, canvas.height / 2 + 40);
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      if (!gameOver) requestAnimationFrame(loop);
+    }
+
+    canvas.addEventListener("click", () => {
+      if (gameOver) resetGame();
+      else bird.dy = JUMP;
+    });
+
+    birdImg.onload = () => loop();
+
+    function hitbox(b) {
+      return {
+        x: b.x + HIT_PAD,
+        y: b.y + HIT_PAD,
+        w: b.w - HIT_PAD * 2,
+        h: b.h - HIT_PAD * 2
+      };
+    }
+  </script>
+</body>
+</html>
